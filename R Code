@@ -27,10 +27,8 @@ category_totals <- data %>%
   group_by(Short_Category) %>%
   summarize(Total_Value = sum(Value, na.rm = TRUE)) %>%
   arrange(desc(Total_Value))
-
-# View the summarized totals
 print(category_totals)
-# Bar plot for total values by category
+
 ggplot(category_totals, aes(x = reorder(Short_Category, -Total_Value), y = Total_Value)) +
   geom_bar(stat = "identity", fill = "pink") +
   coord_flip() +  # Flip axes for better readability
@@ -59,9 +57,8 @@ aggregated_data <- data %>%
   group_by(Group, Date) %>%
   summarize(Total_Value = sum(Value, na.rm = TRUE))
 
-# View aggregated data
 head(aggregated_data)
-# View the cleaned data
+
 ggplot(aggregated_data, aes(x = Date, y = Total_Value, color = Group)) +
   geom_line() +
   labs(
@@ -79,12 +76,12 @@ ggplot(aggregated_data, aes(x = Date, y = Total_Value, color = Group)) +
     plot.title = element_text(size = 12)
   )
 
-# Summarize total values by group
+
 group_totals <- aggregated_data %>%
   group_by(Group) %>%
   summarize(Total_Value = sum(Total_Value))
 
-# Bar plot
+
 ggplot(group_totals, aes(x = reorder(Group, -Total_Value), y = Total_Value, fill = Group)) +
   geom_bar(stat = "identity") +
   labs(
@@ -97,10 +94,9 @@ ggplot(group_totals, aes(x = reorder(Group, -Total_Value), y = Total_Value, fill
     axis.text.x = element_text(size = 6),
     axis.text.y = element_text(size = 8),
     plot.title = element_text(size = 12),
-    legend.position = "none"  # Hide legend (optional)
+    legend.position = "none" 
   )
 
-# Plot using shortened labels with smaller font size
 
 summary_stats <- aggregated_data %>%
   group_by(Group) %>%
@@ -112,7 +108,6 @@ summary_stats <- aggregated_data %>%
     Max_Value = max(Total_Value, na.rm = TRUE)
   )
 
-# View the summary statistics
 print(summary_stats)
 
 
@@ -131,8 +126,7 @@ ggplot(aggregated_data, aes(x = Group, y = Total_Value, fill = Group)) +
     legend.position = "none"
   )
 
- 
-# Bar plot of mean values
+
 mean_values <- summary_stats %>%
   select(Group, Mean_Value)
 
