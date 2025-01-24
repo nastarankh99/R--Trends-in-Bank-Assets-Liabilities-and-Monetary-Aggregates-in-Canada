@@ -1,0 +1,153 @@
+install.packages(c("dplyr", "ggplot2", "lubridate", "tseries", "readxl"))
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(magrittr)
+library(readxl)
+
+data <- read_xlsx("C:/Users/98910/Desktop/Chartered bank assets and liabilities and monetary aggregates.xlsx", sheet=1)
+head(data)
+colnames(data)
+summary(data)
+
+data <- data %>%
+  rename(
+    Category = `Row`,
+    Date = `Column`,
+    Value = `Value`
+  ) %>%
+  mutate(
+    Date = as.Date(Date, format = "%Y-%m-%d"), # Convert dates to proper format
+    Value = as.numeric(Value)                 # Ensure values are numeric
+  )
+data <- data %>%
+  mutate(Short_Category = substr(Category, 1, 30)) # Use first 30 characters
+
+category_totals <- data %>%
+  group_by(Short_Category) %>%
+  summarize(Total_Value = sum(Value, na.rm = TRUE)) %>%
+  arrange(desc(Total_Value))
+
+# View the summarized totals
+print(category_totals)
+# Bar plot for total values by category
+ggplot(category_totals, aes(x = reorder(Short_Category, -Total_Value), y = Total_Value)) +
+  geom_bar(stat = "identity", fill = "pink") +
+  coord_flip() +  # Flip axes for better readability
+  labs(
+    title = "Category Comparison: Total Values",
+    x = "Category",
+    y = "Total Value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 6),  # Smaller font for y-axis (categories)
+    axis.text.x = element_text(size = 6),  # Smaller font for x-axis
+    plot.title = element_text(size = 10),  # Title font size
+    legend.position = "none"  # Remove legend (not needed for a single variable)
+  )
+
+aggregated_data <- data %>%
+  mutate(
+    Group = case_when(
+      grepl("personal", Category, ignore.case = TRUE) ~ "Personal Deposits",
+      grepl("non-personal", Category, ignore.case = TRUE) ~ "Non-Personal Deposits",
+      grepl("Currency outside banks", Category, ignore.case = TRUE) ~ "Currency Outside Banks",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  group_by(Group, Date) %>%
+  summarize(Total_Value = sum(Value, na.rm = TRUE))
+
+# View aggregated data
+head(aggregated_data)
+# View the cleaned data
+ggplot(aggregated_data, aes(x = Date, y = Total_Value, color = Group)) +
+  geom_line() +
+  labs(
+    title = "Trends by Aggregated Indexes",
+    x = "Date",
+    y = "Total Value",
+    color = "Group"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 8, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 8),
+    legend.text = element_text(size = 8),
+    legend.title = element_text(size = 10),
+    plot.title = element_text(size = 12)
+  )
+
+# Summarize total values by group
+group_totals <- aggregated_data %>%
+  group_by(Group) %>%
+  summarize(Total_Value = sum(Total_Value))
+
+# Bar plot
+ggplot(group_totals, aes(x = reorder(Group, -Total_Value), y = Total_Value, fill = Group)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Total Values by Aggregated Groups",
+    x = "Group",
+    y = "Total Value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12),
+    legend.position = "none"  # Hide legend (optional)
+  )
+
+# Plot using shortened labels with smaller font size
+
+summary_stats <- aggregated_data %>%
+  group_by(Group) %>%
+  summarize(
+    Mean_Value = mean(Total_Value, na.rm = TRUE),
+    Median_Value = median(Total_Value, na.rm = TRUE),
+    SD_Value = sd(Total_Value, na.rm = TRUE),
+    Min_Value = min(Total_Value, na.rm = TRUE),
+    Max_Value = max(Total_Value, na.rm = TRUE)
+  )
+
+# View the summary statistics
+print(summary_stats)
+
+
+ggplot(aggregated_data, aes(x = Group, y = Total_Value, fill = Group)) +
+  geom_boxplot() +
+  labs(
+    title = "Distribution of Values by Group",
+    x = "Group",
+    y = "Total Value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12),
+    legend.position = "none"
+  )
+
+ 
+# Bar plot of mean values
+mean_values <- summary_stats %>%
+  select(Group, Mean_Value)
+
+ggplot(mean_values, aes(x = reorder(Group, -Mean_Value), y = Mean_Value, fill = Group)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Mean Values by Group",
+    x = "Group",
+    y = "Mean Value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 10),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12),
+    legend.position = "none"
+  )
+
