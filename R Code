@@ -145,3 +145,59 @@ ggplot(mean_values, aes(x = reorder(Group, -Mean_Value), y = Mean_Value, fill = 
     legend.position = "none"
   )
 
+##ARIMA Forecast
+personal_deposits <- aggregated_data %>%
+  filter(Group == "Personal Deposits") %>%
+  arrange(Date)
+
+
+all_dates <- seq(min(personal_deposits$Date), max(personal_deposits$Date), by = "month")
+missing_dates <- setdiff(all_dates, personal_deposits$Date)
+
+if (length(missing_dates) > 0) {
+  cat("Missing dates detected:\n")
+  print(missing_dates)
+} else {
+  cat("No missing dates.\n")
+}
+
+
+personal_deposits <- personal_deposits %>%
+  complete(Date = seq(min(Date), max(Date), by = "month")) %>%
+  arrange(Date)
+
+
+personal_deposits$Total_Value <- zoo::na.approx(personal_deposits$Total_Value, na.rm = FALSE)
+
+
+personal_ts <- ts(personal_deposits$Total_Value, frequency = 12, start = c(2024, 7))
+
+
+personal_arima <- auto.arima(personal_ts)
+summary(personal_arima)
+
+forecast_personal <- forecast(personal_arima, h = 12)
+
+
+forecast_df <- data.frame(
+  Date = seq(as.Date("2024-08-01"), by = "month", length.out = 12),
+  Forecast = as.numeric(forecast_personal$mean),
+  Lower = as.numeric(forecast_personal$lower[, 2]),
+  Upper = as.numeric(forecast_personal$upper[, 2])
+)
+
+
+ggplot(forecast_df, aes(x = Date, y = Forecast)) +
+  geom_line(color = "maroon") +
+  geom_ribbon(aes(ymin = Lower, ymax = Upper), alpha = 0.2, fill = "green") +
+  labs(
+    title = "ARIMA Forecast for Personal Deposits",
+    x = "Date",
+    y = "Total Value"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 8),
+    plot.title = element_text(size = 12)
+  )
